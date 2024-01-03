@@ -11,6 +11,7 @@ import {
   VStack,
   Text,
   Center,
+  TabIndicator,
   
 
 } from '@chakra-ui/react';
@@ -24,6 +25,7 @@ import { useBreakpointValue } from '@chakra-ui/react';
 import NewFeature from './dao/newFeature';
 import CreateAccountCTA from './dao/createAccountCTA';
 import '@fontsource/creepster';
+import '@fontsource/press-start-2p';
 
 
   
@@ -42,13 +44,17 @@ const Home = () => {
       
     
     >
-      <Tabs isFitted variant="solid-rounded" 
-     justifyContent={'center'} {...tabProps}>
+      <Tabs isFitted variant="unstyled" 
+     justifyContent={'center'} {...tabProps} > 
       <Center>
-        <TabList  display={'flex'}  width="85%" >
+        <TabList  display={'flex'}  width="85%" fontFamily='PressStart2P'>
+          
           <Tab
+            
             color="lightgreen"
             background="linear-gradient(0deg, black, darkgreen, black)"
+            borderRadius={'50%'}
+           
             _selected={{
               background: 'linear-gradient(0deg, black, limegreen, black)',
               color: 'black',
@@ -63,6 +69,7 @@ const Home = () => {
           <Tab
             color="lightgreen"
             background="linear-gradient(0deg, black, darkgreen, black)"
+            borderRadius={'50%'}
             _selected={{
               background: 'linear-gradient(0deg, black, limegreen, black)',
               color: 'black',
@@ -72,11 +79,12 @@ const Home = () => {
 
             }} // Change the background color when selected
           >
-            🛹 UPLOAD
+            🛹 POST
           </Tab>
           <Tab
             color="lightgreen"
             background="linear-gradient(0deg, black, darkgreen, black)"
+            borderRadius={'50%'}
             _selected={{
               background: 'linear-gradient(0deg, black, limegreen, black)',
               color: 'black',
