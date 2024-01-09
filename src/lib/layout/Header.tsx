@@ -523,6 +523,18 @@ const HeaderNew = () => {
                 💻 Contribute
               </MenuItem>
             </Link>
+
+            <Link to="/faq" style={{ textDecoration: 'none' }}>
+              <MenuItem
+                _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
+                backgroundColor="black"
+              >
+                ? How It Works
+              </MenuItem>
+            </Link>
+
+          
+
             <MenuDivider />
 
             <MenuGroup title="Forks">

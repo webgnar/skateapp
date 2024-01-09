@@ -4,6 +4,7 @@ import SubscriberList from "lib/pages/home/dao/components/steemskate/subscribers
 import UploadPage from "lib/pages/upload";
 import React from "react";
 import type { PathRouteProps } from "react-router-dom";
+import Faq from "lib/pages/faq";
 
 import SkatehiveProposals from "lib/pages/home/dao/snapshot";
 const Home = React.lazy(() => import("lib/pages/home"));
@@ -68,6 +69,11 @@ export const routes: Array<PathRouteProps> = [
   {
     path: "/qfs",
     element: <QFS />,
+  },
+
+  {
+    path: "/faq",
+    element: <Faq />,
   },
 
   {
