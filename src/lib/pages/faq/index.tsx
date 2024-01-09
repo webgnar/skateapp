@@ -28,7 +28,9 @@ const Faq = () => {
           paddingRight={"15%"}
           fontSize={"1.2em"}
         >
-        Skatehive is a crypto skate website where you can make an account, and post your edits and photos in the formm of blog posts.
+        Skatehive is a crypto skate website where you can make an account, 
+        and post your edits and photos in the formm of blog posts.
+        Skatehive posts are Hive blockchain posts inside the Skatehive Community.
         </Text>
         <Box display={"flex"} 
         justifyContent={"space-between"}
@@ -82,8 +84,9 @@ const Faq = () => {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Text>You can earn Hive tokens anytime you send a transaction on the blockchain. 
-      Any time you comment, vote, or post, you are creating a Hive transaction subject to the tokenomics of Hive. </Text>
+    <Text fontSize={"1.2em"}>You can earn Hive tokens by making Skatehive posts. By voting on Skatehive posts, by commenting on posts, or by earning intrest on the Hive tokens you already have.
+    
+       </Text>
     </AccordionPanel>
   </AccordionItem>
 
@@ -97,8 +100,13 @@ const Faq = () => {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Text>The money comes from the upvotes that your post gets. 
-      The more Hive Power you have (staked hive) the more your upvote is worth.</Text>
+    <Text fontSize={"1.2em"}>The money comes from people upvoting your post.
+      
+      Imagine if bank accounts were connected to 
+        instagram accounts and the amount of money in a bank account determined 
+        the value of their "like" on your post. 
+        That is how Skatehive works.
+      The more Hive Power a voter has, the more their upvote is worth.</Text>
     </AccordionPanel>
   </AccordionItem>
 
@@ -106,13 +114,35 @@ const Faq = () => {
     <h2>
       <AccordionButton>
         <Box as="span" flex='1' textAlign='left'>
-        <Text fontSize={"1.5em"} color={"white"}>What causes some posts to get more rewards than others?</Text>
+          <Text fontSize={"1.5em"} color={"white"}>Again, WHERE does the money come from?</Text>
         </Box>
         <AccordionIcon />
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Text>Skatehive is manually curated by @web-gnar and @knowhow92. 
+    <Text fontSize={"1.2em"}>
+
+      The crypto tokenomics of Hive work in a way where, 
+      when new coins are mined, some go to the miners, and the rest go to whats called the Reward Pool.
+      The Reward Pool is a pool of Hive that needs to get distributed to people, in order to give Hive a use-case.
+      The amount of Hive Power someone has, determines the weight of their say, 
+      in how that reward pool should be "spent".
+      So the money comes from a reward pool of mined hive, that must be distributed to people voting on posts!
+    </Text>
+    </AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem>
+    <h2>
+      <AccordionButton>
+        <Box as="span" flex='1' textAlign='left'>
+        <Text fontSize={"1.5em"} color={"white"}>Why do some posts get more $$$ than others?</Text>
+        </Box>
+        <AccordionIcon />
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <Text fontSize={"1.2em"}>Skatehive is manually curated by @web-gnar and @knowhow92. 
       The process involves them submitting your post to OCD Nomination. </Text>
     </AccordionPanel>
   </AccordionItem>
@@ -121,13 +151,13 @@ const Faq = () => {
     <h2>
       <AccordionButton>
         <Box as="span" flex='1' textAlign='left'>
-        <Text fontSize={"1.5em"} color={"white"}>How do I make a post that gets me a strong upvote?</Text>
+        <Text fontSize={"1.5em"} color={"white"}>How do I make a good post?</Text>
         </Box>
         <AccordionIcon />
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Text>Think of making Skatehive posts like making a website. 
+    <Text fontSize={"1.2em"}>Think of making Skatehive posts like making a website. 
       There is a lot you can do in a post that is similar to how you make a webpage. 
       You can add Images, Gifs, text, some HTML markup, and Video. 
       The more brainpower and data you put into your post, the more valuable it is. 
@@ -146,7 +176,7 @@ const Faq = () => {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Text>You use a crypto exchange like Simple Swap, to convert your Hive to another crypto, like Litecoin, that you can sell for your local currency. 
+    <Text fontSize={"1.2em"}>You use a crypto exchange like Simple Swap, to convert your Hive to another crypto, like Litecoin, that you can sell for your local currency. 
       Some exchanges like Binance allow you to sell Hive directly to USD or your local currency.</Text>
     </AccordionPanel>
   </AccordionItem>
@@ -161,9 +191,29 @@ const Faq = () => {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Text>In the crypto world, its the same as Staking. 
-      Your Hive power determines the magnitude of your upvote, when you upvote posts. 
-      When you upvote a post, you always get a "curation reward" for essesntially, doing your job, giving value to content.  </Text>
+    <Text fontSize={"1.2em"}>In the crypto world, its the same as staking. 
+      Staking is when you lock up your crypto and earn intrest on it.
+      Hive Power is non-transferable and requires 3 months (13 payments) to convert back to Hive.
+      Your Hive power determines the magnitude of your upvote. 
+      When you upvote a post, you always get a "curation reward" for essesntially, doing your job, giving value to content. 
+      So if a post makes $10.00, and you threw in $0.03 from your upvote,  </Text>
+    </AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem>
+    <h2>
+      <AccordionButton>
+        <Box as="span" flex='1' textAlign='left'>
+          <Text fontSize={"1.5em"} color={"white"}>What are Hive Backed Dollars (HBD)?</Text>
+        </Box>
+        <AccordionIcon />
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <Text fontSize={"1.2em"}>Hive Backed Dollars are one dollar's worth of Hive. It is Hive's stablecoin.
+      You can convert your Hive into the Hive Backed Dollar stablecoin to preserve your gains. 
+      You can then send/recieve your HBD or put it into HBD Savings, 
+      which earns 20% APR and pays out every 30 days. </Text>
     </AccordionPanel>
   </AccordionItem>
 
