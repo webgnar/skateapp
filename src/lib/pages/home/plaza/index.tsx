@@ -25,7 +25,7 @@ import remarkGfm from "remark-gfm";
 import { CommentProps } from "../Feed/types";
 import useAuthUser from "../api/useAuthUser";
 import voteOnContent from "../api/voting";
-
+import HiveClient from "lib/pages/utils/hiveClient";
 type User = {
   name: string;
 } | null;
@@ -35,7 +35,9 @@ const Plaza: React.FC = () => {
   const parts = pathname.split("/");
   const URLAuthor = "skatehacker";
   const URLPermlink = "test-advance-mode-post";
-
+  // for testing purposes
+  // const URLPermlink = "testing-skatehive-ipfs-gateway"
+  const client = HiveClient;
   const [post, setPost] = useState<any | null>(null);
   const [comments, setComments] = useState<CommentProps[]>([]);
   const [commentContent, setCommentContent] = useState("");
@@ -44,21 +46,15 @@ const Plaza: React.FC = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [payout, setPayout] = useState(0);
   const user = useAuthUser();
   const metadata = JSON.parse(user.user?.json_metadata || "{}");
-  const client = new Client("https://api.hive.blog");
   const [isUploading, setIsUploading] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
-
   const [loadedCommentsCount, setLoadedCommentsCount] = useState(15);
   const [localNetVotes, setNetVotes] = useState(0);
-
   const containerRef = useRef<HTMLDivElement>(null);
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
 
@@ -70,21 +66,28 @@ const Plaza: React.FC = () => {
         [URLAuthor, URLPermlink]
       );
       setComments(allComments.reverse());
+      console.log(allComments)
+
       setIsLoadingComments(false);
+
+
       return allComments;
+
+
+
     } catch (error) {
       console.error("Error fetching comments:", error);
     }
   };
 
   const fetchPostData = async () => {
-    const client = new Client("https://api.hive.blog");
 
     try {
       const postData = await client.database.call("get_content", [
         URLAuthor,
         URLPermlink,
       ]);
+      console.log(postData)
       setPost({ ...postData });
     } catch (error) {
       console.error("Error fetching post data:", error);
@@ -94,7 +97,56 @@ const Plaza: React.FC = () => {
   useEffect(() => {
     fetchPostData();
     fetchComments();
-  }, []);
+  }
+    , []);
+  const getCommentsArray = (comments: any, author: string, permlink: string): CommentProps[] => {
+    const originalPostKey = `${URLAuthor}/${URLPermlink}`;
+    for (const commentKey in comments) {
+      const comment = comments[commentKey];
+      const subComments = comment.replies;
+
+      // add a repliesFetched property to the comment
+      comments[commentKey].repliesFetched = [];
+
+      // add the sub comments to the repliesFetched property of this comment
+      for (let i = 0; i < subComments.length; i++) {
+        const subComment = subComments[i];
+        if (subComment && subComment in comments) {
+          const subCommentObject = comments[subComment];
+          comments[commentKey].repliesFetched.push(subCommentObject);
+        }
+      }
+
+
+
+      // set net_votes of the comment with active_votes.length
+      comments[commentKey].net_votes =
+        comments[commentKey].active_votes.length;
+    }
+
+    const commentsArray: CommentProps[] = [];
+
+    // add the comments to the commentsArray
+    for (const commentKey in comments) {
+      const comment = comments[commentKey];
+
+      // push the comment to the comments array only if it's a reply to the original post
+      if (
+        comment.parent_author === author &&
+        comment.parent_permlink === permlink
+      ) {
+        commentsArray.push(comments[commentKey]);
+      }
+    }
+    console.log("ARRAYC:", commentsArray)
+    return commentsArray;
+  };
+
+  useEffect(() => {
+    getCommentsArray(comments, URLAuthor, URLPermlink);
+
+  }
+    , [comments]);
 
   const handlePostComment = async () => {
     if (!window.hive_keychain) {
@@ -124,6 +176,16 @@ const Plaza: React.FC = () => {
       parentAuthor = URLAuthor;
       parentPermlink = URLPermlink;
     }
+    const beneficiaries = [
+      { account: 'steemskate', weight: 3000 },
+      { account: 'xvlad', weight: 2000 },
+    ];
+
+    const extensions = [
+      [0, {
+        beneficiaries: beneficiaries,
+      }],
+    ];
 
     const operations = [
       [
@@ -156,7 +218,6 @@ const Plaza: React.FC = () => {
       }
     );
   };
-
   const loadUpdatedComments = async (
     username: string,
     postCreationTimestamp: number
@@ -188,17 +249,6 @@ const Plaza: React.FC = () => {
   useEffect(() => {
     setUsername(user?.user?.name || null);
   }, [user]);
-
-  const containerStyle: CSSProperties = {
-    position: "fixed",
-    bottom: "40px",
-    right: "20px",
-    width: "60%",
-    overflowY: "auto",
-    borderRadius: "10px",
-    padding: "10px",
-    zIndex: 1000,
-  };
 
   const postContainerStyle: CSSProperties = {
     borderRadius: "10px",
@@ -268,7 +318,7 @@ const Plaza: React.FC = () => {
         }
         // Handle videos
         else if (file.type.startsWith("video")) {
-          const videoElement = `<video controls muted autoplay loop><source src="${ipfsUrl}" type="${file.type}"></video> `;
+          const videoElement = `<video controls muted loop><source src="${ipfsUrl}" type="${file.type}"></video> `;
           setCommentContent((prevContent) => prevContent + `\n${videoElement}` + '\n');
         }
 
@@ -287,72 +337,10 @@ const Plaza: React.FC = () => {
     }
   };
 
-
-
-
   return (
     <Center>
-      <Box
-        style={{
-          maxWidth: isMobile ? "100%" : "60%",
-          padding: "0 10px",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* {showSplash && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              background: "rgba(0, 0, 0, 0.7)",
-              zIndex: 1001,
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                color: "white",
-              }}
-            >
-              <Center>
-                <VStack>
-                  <Image
-                    src={
-                      metadata?.profile?.profile_image ||
-                      "https://images.ecency.com/webp/u/skatehive/avatar/small"
-                    }
-                    alt="SkateHive logo"
-                    boxSize="100px"
-                    borderRadius="50%"
-                    margin="5px"
-                  />
-                  <Text
-                    fontSize="2xl"
-                    fontWeight="bold"
-                    textAlign="center"
-                    marginBottom="10px"
-                  >
-                    After Posting, scroll down to the bottom to see your post,
-                    sorry for that!
-                  </Text>
-                </VStack>
-              </Center>
-            </div>
-          </div>
-        )} */}
-        <Box
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
+      <Box ref={containerRef} style={{ borderRadius: "10px", overflowY: "auto", maxWidth: isMobile ? "100%" : "60%" }}>
+        <Flex flexDirection="column" justifyContent="space-between">
           <Flex alignItems="center" justifyContent="start" paddingLeft="10px">
             <Image
               src={
@@ -366,18 +354,20 @@ const Plaza: React.FC = () => {
             />
             <Text>{metadata?.profile?.name || "You"}</Text>
           </Flex>
+
           <MDEditor
             value={commentContent}
             onChange={(value, event, state) => setCommentContent(value || "")}
             preview="edit"
             height={200}
+
             style={{
               borderRadius: "5px",
-              border: "1px solid #1da1f2",
+              border: "1px solid limegreen",
               padding: "10px",
+              backgroundColor: "navy",
             }}
           />
-
           <Box
             style={{
               display: "flex",
@@ -403,7 +393,7 @@ const Plaza: React.FC = () => {
                 ) : (
                   <>
                     <FaImage style={{ marginRight: "5px" }} />
-                    <Text color={"black"} > | </Text>
+                    <Text color={"black"}> | </Text>
                     <FaVideo style={{ marginRight: "5px" }} />
                   </>
                 )}
@@ -433,127 +423,126 @@ const Plaza: React.FC = () => {
             >
               {isPostingComment ? <Spinner size="sm" /> : "🗣 Say it"}
             </Button>
+
           </Box>
-        </Box>
-        <ReactMarkdown
-          children={commentContent}
-          rehypePlugins={[rehypeRaw]}
-          remarkPlugins={[remarkGfm]}
-          components={MarkdownRenderers}
-        />
-        <Box
-          ref={containerRef}
-          style={{
-            borderRadius: "10px",
-            overflowY: "auto",
-          }}
-        >
-          {isLoadingComments ? (
+          {commentContent.length > 1 && (
             <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              height="200px"
+              style={{ border: '2px dashed limegreen', borderRadius: '5px', padding: '10px' }}
             >
-              Loading comments...
+              <Badge>Draft</Badge>
+              <ReactMarkdown
+                children={commentContent}
+                rehypePlugins={[rehypeRaw]}
+                remarkPlugins={[remarkGfm]}
+                components={MarkdownRenderers}
+              />
             </Box>
-          ) : (
-            <Flex
-              borderRadius="10px"
-              padding="5px"
-              direction="column"
-              overflow="auto"
-              style={{ width: "100%" }}
-              id="postsTl"
-              height="calc(100vh - 250px)"
-              ref={chatContainerRef}
-            >
-              <InfiniteScroll
-                dataLength={loadedCommentsCount}
-                next={() => setLoadedCommentsCount((val) => val + 15)}
-                hasMore={comments.length !== loadedCommentsCount}
-                scrollableTarget="postsTl"
-                loader={
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    height="200px"
-                  >
-                    Loading comments...
-                  </Box>
-                }
-              >
-                {comments
-                  .slice(0, loadedCommentsCount)
-                  .map((comment, index) => (
-                    <Box key={comment.id}>
-                      <Box style={postContainerStyle}>
-                        <HStack justifyContent={"space-between"}>
-                          <Flex
-                            alignItems="center"
-                            justifyContent="start"
-                            paddingLeft="10px"
-                          >
-                            <Image
-                              src={`https://images.ecency.com/webp/u/${comment.author}/avatar/small`}
-                              alt={`${comment.author}'s avatar`}
-                              boxSize="40px"
-                              borderRadius="50%"
-                              margin="5px"
-                            />
-                            <span>{comment.author}</span>
-                          </Flex>
-
-                          <Tooltip
-                            label="Yes you can earn $ by tweeting here, make sure you post cool stuff that people will fire up!"
-                            aria-label="A tooltip"
-                            placement="top"
-                            bg={"black"}
-                            color={"yellow"}
-                            border={"1px dashed yellow"}
-                          >
-                            <Badge
-                              marginBottom={"27px"}
-                              colorScheme="yellow"
-                              fontSize="sm"
-                            >
-                              {comment.total_payout_value !== 0
-                                ? `${comment.pending_payout_value}`
-                                : "0.000 "}
-                            </Badge>
-                          </Tooltip>
-                        </HStack>
-                        <Divider />
-                        <ReactMarkdown
-                          children={comment.body}
-                          rehypePlugins={[rehypeRaw]}
-                          remarkPlugins={[remarkGfm]}
-                          components={MarkdownRenderers}
-                        />
-
-                        <Flex justifyContent="flex-end" mt="4">
-                          <Button
-                            onClick={() => handleVote(comment)}
-                            style={{
-                              border: "1px solid limegreen",
-                              backgroundColor: "black",
-                              fontSize: "12px",
-                              color: "limegreen",
-                              padding: "3px 6px",
-                              marginLeft: "8px",
-                            }}
-                          >
-                            Vote 👍
-                          </Button>
-                        </Flex>
-                      </Box>
-                    </Box>
-                  ))}
-              </InfiniteScroll>
-            </Flex>
           )}
-        </Box>
+
+        </Flex>
+
+        {isLoadingComments ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="200px"
+          >
+            Loading GMs...
+          </Box>
+        ) : (
+          <Flex
+            borderRadius="10px"
+            padding="5px"
+            direction="column"
+            overflow="auto"
+            style={{ width: "100%" }}
+          >
+            <InfiniteScroll
+              dataLength={loadedCommentsCount}
+              next={() => setLoadedCommentsCount((val) => val + 15)}
+              hasMore={comments.length !== loadedCommentsCount}
+              scrollableTarget="postsTl"
+              loader={
+                <Box
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  height="200px"
+                >
+                  Loading comments...
+                </Box>
+              }
+            >
+              {comments
+                .slice(0, loadedCommentsCount)
+                .map((comment, index) => (
+                  <Box key={comment.id}>
+                    <Box style={postContainerStyle}>
+                      <HStack justifyContent={"space-between"}>
+                        <Flex
+                          alignItems="center"
+                          justifyContent="start"
+                          paddingLeft="10px"
+                        >
+                          <Image
+                            src={`https://images.ecency.com/webp/u/${comment.author}/avatar/small`}
+                            alt={`${comment.author}'s avatar`}
+                            boxSize="40px"
+                            borderRadius="50%"
+                            margin="5px"
+                          />
+                          <span>{comment.author}</span>
+                        </Flex>
+
+                        <Tooltip
+                          label="Yes you can earn $ by tweeting here, make sure you post cool stuff that people will fire up!"
+                          aria-label="A tooltip"
+                          placement="top"
+                          bg={"black"}
+                          color={"yellow"}
+                          border={"1px dashed yellow"}
+                        >
+                          <Badge
+                            marginBottom={"27px"}
+                            colorScheme="yellow"
+                            fontSize="sm"
+                          >
+                            {comment.total_payout_value !== 0
+                              ? `${comment.pending_payout_value}`
+                              : "0.000 "}
+                          </Badge>
+                        </Tooltip>
+                      </HStack>
+                      <Divider />
+                      <ReactMarkdown
+                        children={comment.body}
+                        rehypePlugins={[rehypeRaw]}
+                        remarkPlugins={[remarkGfm]}
+                        components={MarkdownRenderers}
+                      />
+
+                      <Flex justifyContent="flex-end" mt="4">
+                        <Button
+                          onClick={() => handleVote(comment)}
+                          style={{
+                            border: "1px solid limegreen",
+                            backgroundColor: "black",
+                            fontSize: "12px",
+                            color: "limegreen",
+                            padding: "3px 6px",
+                            marginLeft: "8px",
+                          }}
+                        >
+                          Vote 👍
+                        </Button>
+                      </Flex>
+                    </Box>
+                  </Box>
+                ))}
+            </InfiniteScroll>
+          </Flex>
+        )}
       </Box>
     </Center>
   );

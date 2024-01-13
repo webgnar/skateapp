@@ -46,6 +46,8 @@ import * as dhive from "@hiveio/dhive";
 
 import { fetchConversionRate, fetchHbdPrice } from "lib/pages/utils/apis/coinGecko";
 import { color } from "framer-motion";
+import CommunityStats from "lib/pages/home/dao/communityStats";
+import CommunityTotalPayout from "lib/pages/home/dao/commmunityPayout";
 
 type LinkTabProps = TabProps & RouterLinkProps;
 
@@ -492,6 +494,14 @@ const HeaderNew = () => {
                 🏛 DAO
               </MenuItem>
             </Link>
+            <Link to="/invite" style={{ textDecoration: 'none' }}>
+              <MenuItem
+                _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
+                backgroundColor="black"
+              >
+                ❤️ Invite a Friend
+              </MenuItem>
+            </Link>
             <Link to="/QFS" style={{ textDecoration: 'none' }}>
               <MenuItem
                 _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
@@ -564,7 +574,13 @@ const HeaderNew = () => {
                 >
                   ➕ Soma Skate
                 </MenuItem>
+
               </Link>
+              <MenuItem
+                backgroundColor="black">
+                <CommunityTotalPayout communityTag="hive-173115" />
+
+              </MenuItem>
             </MenuGroup>
           </MenuList>
         </Menu>
@@ -604,35 +620,67 @@ const HeaderNew = () => {
       )}
 
       <Flex maxW={"100%"} gap={{ base: 4, md: 8 }} padding={{ base: "6px 6px", md: "8px 20px" }} borderRadius="6px" position={{ md: "absolute" }} border="2px solid limegreen">
-        <Button
-          variant="link"
-          color="white"
-          as={Link}
-          to="/"
-          leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
-        >
-          Home
-        </Button>
-
-        <Button
-          variant="link"
-          color="white"
-          as={Link}
-          to="/upload"
-          leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
-        >
-          Post
-        </Button>
-
-        <Button
-          variant="link"
-          color="white"
-          as={Link}
-          to="/plaza"
-          leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
-        >
-          Plaza
-        </Button>
+        {isDesktop ? (
+          <>
+            <Button
+              variant="link"
+              color="white"
+              as={Link}
+              to="/"
+              leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
+            >
+              Home
+            </Button>
+            <Button
+              variant="link"
+              color="white"
+              as={Link}
+              to="/upload"
+              leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
+            >
+              Post
+            </Button>
+            <Button
+              variant="link"
+              color="white"
+              as={Link}
+              to="/plaza"
+              leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
+            >
+              Plaza
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="link"
+              color="white"
+              as={Link}
+              to="/plaza"
+              leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
+            >
+              Home
+            </Button>
+            <Button
+              variant="link"
+              color="white"
+              as={Link}
+              to="/upload"
+              leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
+            >
+              Post
+            </Button>
+            <Button
+              variant="link"
+              color="white"
+              as={Link}
+              to="/blog"
+              leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
+            >
+              Mag
+            </Button>
+          </>
+        )}
         {
           // Se não tiver logado
           !loggedIn ?

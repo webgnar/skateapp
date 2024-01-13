@@ -8,6 +8,7 @@ import Faq from "lib/pages/faq";
 
 import SkatehiveProposals from "lib/pages/home/dao/snapshot";
 import Plaza from "lib/pages/home/plaza";
+import HiveBlog from "lib/pages/home/Feed/Feed";
 const Home = React.lazy(() => import("lib/pages/home"));
 const Wallet = React.lazy(() => import("lib/pages/wallet"));
 const Profile = React.lazy(() => import("lib/pages/profile"));
@@ -120,13 +121,17 @@ export const routes: Array<PathRouteProps> = [
     element: <GnarsHolders />,
   },
   {
-    path: "/accountcreation",
+    path: "/invite",
     element: <AccountCreation />,
   },
   {
     path: "/dao",
     element: <SkatehiveProposals />,
-  }
+  },
+  {
+    path: "/blog",
+    element: <HiveBlog />,
+  },
 ];
 
 export const privateRoutes: Array<PathRouteProps> = [];
