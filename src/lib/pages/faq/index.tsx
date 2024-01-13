@@ -196,7 +196,55 @@ const Faq = () => {
       Hive Power is non-transferable and requires 3 months (13 payments) to convert back to Hive.
       Your Hive power determines the magnitude of your upvote. 
       When you upvote a post, you always get a "curation reward" for essesntially, doing your job, giving value to content. 
-      So if a post makes $10.00, and you threw in $0.03 from your upvote,  </Text>
+      So powering up your Hive allows you to distribute money to others with your upvote.  </Text>
+    </AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem>
+    <h2>
+      <AccordionButton>
+        <Box as="span" flex='1' textAlign='left'>
+          <Text fontSize={"1.5em"} color={"white"}>What does "delegating" mean?</Text>
+        </Box>
+        <AccordionIcon />
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <Text fontSize={"1.2em"}>You can delegate your Hive Power to other people. 
+    What this does is attach your hive power to their account. 
+    You can take back your Hive Power at any time.  
+    Even when your HP is delegated to someone else, you will earn the Curation Rewards from the amount you delegated. 
+    It's good for earning passive Hive if you dont have the time to sit online and upvote things everyday. 
+    We encourage users to delegate Hive to the @skatehive account, because the grows the Skatehive Hive account, and also kicks you back a small reward everytime it upvotes something.  </Text>
+    </AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem>
+    <h2>
+      <AccordionButton>
+        <Box as="span" flex='1' textAlign='left'>
+          <Text fontSize={"1.5em"} color={"white"}>What is this "curation trail" I keep hearing about?</Text>
+        </Box>
+        <AccordionIcon />
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <Text fontSize={"1.2em"}> You can follow another user's Curation Trail, making your account automatically upvote something that another user upvotes. 
+    This is similar to delegating your hive to another account, but you get more rewards, and it consumes your accounts vote strength. </Text>
+    </AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem>
+    <h2>
+      <AccordionButton>
+        <Box as="span" flex='1' textAlign='left'>
+          <Text fontSize={"1.5em"} color={"white"}>Why does my upvote strength get weaker?</Text>
+        </Box>
+        <AccordionIcon />
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <Text fontSize={"1.2em"}> Your upvote strenth is throttled by your Voting Mana. Your voting mana decreases every time you vote, and recharges every 24 hours.  You can control the power of your individual upvotes to slow down Mana degredation, by using the voting slider.</Text>
     </AccordionPanel>
   </AccordionItem>
 
