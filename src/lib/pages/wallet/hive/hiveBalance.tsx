@@ -4,7 +4,7 @@ import { Link as ChakraLink } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import SendHiveModal from "./sendHiveModal";
 import SendHBDModal from "./sendHBDmodal";
-import useAuthUser from "lib/pages/home/api/useAuthUser";
+import useAuthUser from "lib/components/auth/useAuthUser";
 import * as dhive from "@hiveio/dhive";
 // import WalletTransactions from "lib/pages/home/dao/components/hiveGnars/txHistory";
 import PowerUpModal from "./powerUpModal";
@@ -492,6 +492,7 @@ export default function HiveBalanceDisplay2() {
         setAmount={setAmount}
         hiveMemo={hiveMemo} // Make sure to pass hiveMemo here
         setHiveMemo={setHiveMemo}
+        username={user?.name || "pepe"}
       />
 
       {/* <WalletTransactions wallet={user?.name || ""} /> */}

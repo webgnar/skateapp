@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+//@ts-ignore
+import { usePioneer } from '@pioneer-platform/pioneer-react';
+// Chakra UI Components
 import {
   Box,
   Flex,
   HStack,
   Text,
-  Tab,
-  TabProps,
   useBreakpointValue,
   Image,
   Avatar,
@@ -27,31 +29,36 @@ import {
   Tooltip,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
+import { fetchProposals, mapProposals } from "lib/pages/utils/apis/snapshotApi";
+// Emotion
 import { keyframes } from "@emotion/react";
-import { Link as ChakraLink } from '@chakra-ui/react';
+
+// React Router
 import { Link as RouterLink } from 'react-router-dom';
-
-
 import { Link, LinkProps as RouterLinkProps } from "react-router-dom";
-import useAuthUser from "lib/pages/home/api/useAuthUser";
-import HiveLogin from "lib/pages/home/api/HiveLoginModal";
 
+// Icons
+import { FaBell, FaSpeakap, FaUpload, FaScroll, FaVoteYea } from "react-icons/fa";
 
-import axios from "axios";
-//@ts-ignore
-import { usePioneer } from '@pioneer-platform/pioneer-react';
-import { FaBell, FaSpeakap, FaUpload, FaScroll } from "react-icons/fa";
-import { FaLink } from "react-icons/fa";
+// Hive Related
 import * as dhive from "@hiveio/dhive";
+import useAuthUser from "lib/components/auth/useAuthUser";
+import HiveLogin from "lib/components/auth/HiveLoginModal";
 
+// Utils and APIs
 import { fetchConversionRate, fetchHbdPrice } from "lib/pages/utils/apis/coinGecko";
-import { color } from "framer-motion";
-import CommunityStats from "lib/pages/home/dao/communityStats";
+
+// Custom Components
 import CommunityTotalPayout from "lib/pages/home/dao/commmunityPayout";
+import NotificationModal from "lib/components/NotificationsModal";
 
-type LinkTabProps = TabProps & RouterLinkProps;
+// Wagmi and NNS
+import { useNnsName } from "@nnsprotocol/resolver-wagmi";
+import { useEnsAddress } from "wagmi";
 
-interface Notification {
+import { formatWalletAddress } from "lib/pages/utils/formatWallet";
+// types.ts
+export interface Notification {
   date: string;
   id: number;
   msg: string;
@@ -59,17 +66,8 @@ interface Notification {
   type: string;
   url: string;
 }
-interface NotificationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  notifications: Notification[];
-}
 
-const LinkTab: React.FC<LinkTabProps> = ({ to, children, ...tabProps }) => (
-  <Link to={to}>
-    <Tab {...tabProps}>{children}</Tab>
-  </Link>
-);
+
 const dhiveClient = new dhive.Client([
   'https://api.hive.blog',
   'https://api.hivekings.com',
@@ -100,139 +98,20 @@ const HeaderNew = () => {
   const [isNotificationModalOpen, setNotificationModalOpen] = useState(false);
   const [notificationArray, setNotificationArray] = useState<Notification[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<Record<string, string>>({});
+  const [activeProposalsLength, setActiveProposalsLength] = useState<number>(0);
 
 
-  const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, notifications }) => {
-    const msgRegex = /@([\w-]+)\s(.+)/;
-
-    const extractMsgDetails = (msg: string) => {
-      const match = msg.match(msgRegex);
-      return match ? { author: match[1], text: match[2] } : { author: '', text: msg };
-    };
-
-    const [avatarSrcMap, setAvatarSrcMap] = useState<Record<string, string | null>>({});
-    const calculateTimeAgo = (timestamp: string) => {
-      const notificationTime = new Date(timestamp);
-
-      // Get the user's local time zone offset in minutes
-      const userTimeZoneOffset = new Date().getTimezoneOffset();
-
-      // Adjust the notification time to the user's local time zone
-      const notificationTimeLocal = new Date(notificationTime.getTime() - userTimeZoneOffset * 60 * 1000);
-
-      const timeDifference = new Date().getTime() - notificationTimeLocal.getTime();
-      const minutesAgo = Math.floor(timeDifference / (1000 * 60));
-
-      // If the notification time is more than 24 hours ago, show the full date
-      if (minutesAgo > 24 * 60) {
-        return notificationTimeLocal.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  useEffect(() => {
+    fetchProposals().then((fetchedProposals: any) => {
+      if (fetchedProposals) {
+        const activeProposals = mapProposals(fetchedProposals);
+        console.log(activeProposals.length);
+        setActiveProposalsLength(activeProposals.length);
       }
-
-      // Otherwise, show the time difference in a user-friendly manner
-      return `${Math.abs(minutesAgo)} ${Math.abs(minutesAgo) === 1 ? 'minute' : 'minutes'} ago`;
-    };
+    }).catch(error => console.error("Error processing proposals", error));
+  }, []);
 
 
-    const fetchAvatarAndFallback = async (authors: string[]): Promise<void> => {
-      try {
-
-        const dhive_profiles = await dhiveClient.database.getAccounts(authors);
-        const avatarSrcMap: Record<string, string | null> = {};
-
-        dhive_profiles.forEach(profile => {
-          const author = profile.name;
-          const json_metadata = JSON.parse(profile.posting_json_metadata);
-          const profileImage = json_metadata.profile?.profile_image;
-
-          avatarSrcMap[author] = profileImage;
-        });
-
-        // Use the callback form to ensure the state is updated correctly
-        setAvatarSrcMap(prevMap => ({
-          ...prevMap,
-          ...avatarSrcMap,
-        }));
-      } catch (error) {
-        // Fallback to default avatar for failed requests
-        authors.forEach(author => {
-          setAvatarSrcMap(prevMap => ({
-            ...prevMap,
-            [author]: DEFAULT_AVATAR_URL,
-          }));
-        });
-      }
-    };
-
-    useEffect(() => {
-      // Fetch avatar for unique authors in notifications
-      const uniqueAuthors = Array.from(new Set(notifications.map(notification => extractMsgDetails(notification.msg).author)));
-      fetchAvatarAndFallback(uniqueAuthors);
-    }, [notifications]);
-
-
-
-    return (
-      <Popover isOpen={isOpen} onClose={onClose}>
-        <PopoverTrigger>
-          <Text></Text>
-        </PopoverTrigger>
-        <PopoverContent maxH={'756px'} minW={'80%'} bg="black" color="white" borderColor="limegreen">
-          <PopoverCloseButton />
-          <PopoverHeader>Notifications</PopoverHeader>
-          <PopoverBody overflow={'auto'}>
-            {notifications.map((notification) => {
-              const author = extractMsgDetails(notification.msg).author;
-              const avatarSrc = avatarSrcMap[author];
-
-              return (
-                <Box key={notification.id} mb={4} p={4} borderWidth="1px" borderRadius="md">
-                  <HStack spacing={4}>
-                    <Box boxSize={'56px'}>
-                      <Link to={`https://skatehive.app/profile/${author}`} style={{ cursor: 'pointer', textDecoration: 'none' }}>
-
-                        <VStack>
-                          {avatarSrc && (
-                            <Image
-                              src={String(avatarSrc)}
-                              alt="Author Avatar"
-                              boxSize="40px"
-                              borderRadius="full"
-                              objectFit="cover"
-                              mr={2}
-                              onError={(e) => {
-                                console.error('Error loading image:', e);
-                                e.currentTarget.src = DEFAULT_AVATAR_URL;
-                              }}
-                            />
-                          )}
-                          <Text color="orange" fontSize="10px" fontWeight="bold">
-                            {extractMsgDetails(notification.msg).author}
-                          </Text>
-                        </VStack>
-                      </Link>
-                    </Box>
-
-                    <Text fontSize="sm">{extractMsgDetails(notification.msg).text}</Text>
-
-
-                    <Link
-                      to={`https://skatehive.app/post/hive-173115/${notification.url}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <FaLink />
-                    </Link>
-                  </HStack>
-                  <Text align={"right"} fontSize="xs" color="gray.500">
-                    {calculateTimeAgo(notification.date)}
-                  </Text>
-                </Box>
-              );
-            })}
-          </PopoverBody>
-        </PopoverContent>
-      </Popover>
-    );
-  };
 
   const fetchNotifications = async () => {
     try {
@@ -286,7 +165,7 @@ const HeaderNew = () => {
         // Check if response.data is defined
         if (response.data !== undefined) {
           // Check if response.data.nfts is defined and is an array
-          if (response.data.nfts && Array.isArray(response.data.nfts)) {
+          if (response.data.nfts) {
             const gnarsNFTsCount = response.data.nfts.reduce((count: any, nft: any) => {
               if (
                 nft.token &&
@@ -299,11 +178,7 @@ const HeaderNew = () => {
               return count;
             }, 0);
 
-            setTotalNetWorth(response.data.totalNetWorth);
             setGnarsNFTsCount(gnarsNFTsCount);
-          } else {
-            // Handle the case where response.data.nfts is not an array or is undefined
-            console.error('Error: NFTs is not an array or is undefined');
           }
         } else {
           // Handle the case where response.data is undefined
@@ -326,7 +201,6 @@ const HeaderNew = () => {
       onStart(user, rate, loggedIn);
     });
   }, [user]);
-
 
 
   const avatarUrl = user && user.posting_json_metadata !== ""
@@ -352,6 +226,7 @@ const HeaderNew = () => {
     const delegatedVestingSharesFloat = parseFloat(delegatedVestingShares.split(" ")[0]);
     const receivedVestingSharesFloat = parseFloat(receivedVestingShares.split(" ")[0]);
     const availableVESTS = vestingSharesFloat - delegatedVestingSharesFloat;
+
 
 
     const response = await fetch('https://api.hive.blog', {
@@ -450,48 +325,55 @@ const HeaderNew = () => {
         transform: translateY(-5px);
       }
     `;
-
+  const nns = useNnsName({
+    //@ts-ignore
+    address: `${wallet_address}`,
+  })
 
   return (
 
-    <Flex as="header" direction={flexDirection}
-      alignItems="center"
-      justifyContent="space-between"
-      p={6}
-      position="relative"
-      borderRadius="10px"
-      marginBottom="0px"
-    >
-
-      <Flex width="100%" justifyContent="space-between" alignItems="center" mb={{ base: 2, md: 0 }}>
-        <Menu>
+    <Flex as="header" direction="row" justifyContent="space-between" alignItems="center" p={2} m={2} mb={4}>
+      <Flex justifyContent="space-between" borderRadius="6px" border="2px solid #134a2f" minW={"100%"}>
+        <Menu >
           <MenuButton
             as={Button}
             backgroundColor="black"
-            border="limegreen 1px solid"
             color="limegreen"
             size="l"
-            css={{
-              animation: `${glow} 2s infinite alternate , ${moveUpAndDown} 3s infinite`,
-              "&:hover": {
-                animation: `${enlargeOnHover} 0.2s forwards, ${glow} 2s infinite alternate,${moveUpAndDown} 0s infinite`,
-              },
-            }}
+            padding={2}
+            _hover={{ backgroundColor: 'black', color: 'limegreen' }}
           >
+
             <Image
               src="/assets/skatehive.jpeg"
               alt="Dropdown Image"
+              backgroundColor={"black"}
               boxSize="48px" // Adjust the size as needed
-              borderRadius="10px"
+
+              css={{
+                animation: `${glow} 2s infinite alternate , ${moveUpAndDown} 3s infinite`,
+                "&:hover": {
+                  backgroundColor: "black",
+                  color: "limegreen",
+                  animation: `${enlargeOnHover} 0.2s forwards, ${glow} 2s infinite alternate, ${moveUpAndDown} 0s infinite`,
+                },
+              }}
             />
+
           </MenuButton>
           <MenuList border="1px solid limegreen" backgroundColor="black" color="white">
-            <Link to="https://skatehive.app/dao" style={{ textDecoration: 'none' }}>
+
+            <Link to="/dao" style={{ textDecoration: 'none' }}>
+              <MenuItem
+                backgroundColor="black">
+                <CommunityTotalPayout communityTag="hive-173115" />
+
+              </MenuItem>
               <MenuItem
                 _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
                 backgroundColor="black"
               >
-                🏛 DAO
+                🏛 Proposals
               </MenuItem>
             </Link>
             <Link to="/invite" style={{ textDecoration: 'none' }}>
@@ -526,6 +408,14 @@ const HeaderNew = () => {
                 📖 Docs
               </MenuItem>
             </Link>
+            <Link to="/map" style={{ textDecoration: 'none' }}>
+              <MenuItem
+                _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
+                backgroundColor="black"
+              >
+                🗺️ SpotBook
+              </MenuItem>
+            </Link>
             <Link to="/secret" style={{ textDecoration: 'none' }}>
               <MenuItem
                 _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
@@ -555,8 +445,23 @@ const HeaderNew = () => {
           
 
             <MenuDivider />
+            <center>
+
+              <Image width={"200px"} src="https://images.hive.blog/0x0/https://files.peakd.com/file/peakd-hive/web-gnar/23uQ3d5BKcoYkuYWd7kZrnS396M1M6DvsMa5MowAmaVynQr67ChnARGaFstnMGeSspzwR.png" alt="Skatehive Image" />
+            </center>
+
+            <MenuDivider />
 
             <MenuGroup title="Forks">
+              <Link to="https://stoken.wtf" target="_blank" style={{ textDecoration: 'none' }}>
+
+                <MenuItem
+                  _hover={{ backgroundColor: 'white', color: 'black' }} // Invert colors on hover
+                  backgroundColor="black"
+                >
+                  🤘 Stoken.wtf
+                </MenuItem>
+              </Link>
               <Link to="https://crowsnight.com" target="_blank" style={{ textDecoration: 'none' }}>
 
                 <MenuItem
@@ -576,117 +481,91 @@ const HeaderNew = () => {
                 </MenuItem>
 
               </Link>
-              <MenuItem
-                backgroundColor="black">
-                <CommunityTotalPayout communityTag="hive-173115" />
 
-              </MenuItem>
+
+
             </MenuGroup>
           </MenuList>
         </Menu>
+        <Box display="flex" flexDirection="row" alignItems="center">
 
-        <Box >
-          <HStack spacing={3} alignItems="center">
+          {isDesktop ? (
+            <>
+              <Button
+                variant="link"
+                color="white"
+                as={Link}
+                to="/"
+                leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
+                m={"20px"}
+              >
+                Mag
+              </Button>
+              <Button
+                variant="link"
+                color="white"
+                as={Link}
+                to="/upload"
+                leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
+                m={"20px"}
 
+              >
+                Post
+              </Button>
+              <Button
+                variant="link"
+                color="white"
+                as={Link}
+                to="/plaza"
+                leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
+                m={"20px"}
 
-            <ChakraLink as={RouterLink} to="/wallet">
-              {isDesktop && (
-                <Tooltip label="Total Networth counting tokens + NFT Value" aria-label="EVM Wallet">
-                  <Button backgroundColor="black" border="limegreen 2px solid" color="orange">
-                    <Image marginRight={"10px"} boxSize={"22px"} src="https://www.gnars.wtf/images/logo.png"></Image> {gnarsNFTsCount} <Text color="white" style={{ marginLeft: '5px' }}>Gnars</Text>
-                  </Button>
-                </Tooltip>
-              )}
-              <Tooltip label="Hive Wallet Tokens in USD" aria-label="Wallet">
-                <Button backgroundColor="black" border="limegreen 2px solid" color="orange">
-                  <Image marginRight={"10px"} boxSize={"22px"} src="https://cryptologos.cc/logos/hive-blockchain-hive-logo.png?v=026" />
-                  {totalWorth.toFixed(2)} <Text color="white" style={{ marginLeft: '5px' }}>USD</Text>
-                </Button>
-              </Tooltip>
-            </ChakraLink>
-            <FaBell
-              size={24}
-              style={{ color: 'darkorange', cursor: 'pointer' }}
-              onClick={() => setNotificationModalOpen(true)}
-            />
-            <NotificationModal isOpen={isNotificationModalOpen} onClose={() => setNotificationModalOpen(false)} notifications={notifications} />
+              >
+                Plaza
+              </Button>
+            </>
+          ) : (
+            <>
 
-          </HStack>
-        </Box>
+              <Button
+                variant="link"
+                color="white"
+                as={Link}
+                to="/plaza"
+                leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
+                m={"10px"}
 
-      </Flex>
-      {isDesktop && (
-        <Image paddingTop={"15px"} src="https://images.hive.blog/0x0/https://files.peakd.com/file/peakd-hive/web-gnar/23uQ3d5BKcoYkuYWd7kZrnS396M1M6DvsMa5MowAmaVynQr67ChnARGaFstnMGeSspzwR.png" alt="Skatehive Image" />
-      )}
+              >
+                Plaza
+              </Button>
+              <Button
+                variant="link"
+                color="white"
+                as={Link}
+                to="/upload"
+                leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
+                m={"10px"}
 
-      <Flex maxW={"100%"} gap={{ base: 4, md: 8 }} padding={{ base: "6px 6px", md: "8px 20px" }} borderRadius="6px" position={{ md: "absolute" }} border="2px solid limegreen">
-        {isDesktop ? (
-          <>
-            <Button
-              variant="link"
-              color="white"
-              as={Link}
-              to="/"
-              leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
-            >
-              Home
-            </Button>
-            <Button
-              variant="link"
-              color="white"
-              as={Link}
-              to="/upload"
-              leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
-            >
-              Post
-            </Button>
-            <Button
-              variant="link"
-              color="white"
-              as={Link}
-              to="/plaza"
-              leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
-            >
-              Plaza
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="link"
-              color="white"
-              as={Link}
-              to="/plaza"
-              leftIcon={isDesktop ? <FaScroll style={{ color: 'orange' }} /> : undefined}
-            >
-              Home
-            </Button>
-            <Button
-              variant="link"
-              color="white"
-              as={Link}
-              to="/upload"
-              leftIcon={isDesktop ? <FaUpload style={{ color: 'orange' }} /> : undefined}
-            >
-              Post
-            </Button>
-            <Button
-              variant="link"
-              color="white"
-              as={Link}
-              to="/blog"
-              leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
-            >
-              Mag
-            </Button>
-          </>
-        )}
-        {
-          // Se não tiver logado
-          !loggedIn ?
-            // Exibe o botão de login
-            <Button variant="link" color="white" onClick={() => setModalOpen(true)}>Log In</Button> :
-            // Se estiver logado, exibe o menu de profile
+              >
+                Post
+              </Button>
+              <Button
+                variant="link"
+                color="white"
+                as={Link}
+                to="/blog"
+                leftIcon={isDesktop ? <FaSpeakap style={{ color: 'orange' }} /> : undefined}
+                m={"10px"}
+
+              >
+                Mag
+              </Button>
+            </>
+
+          )}
+          {!loggedIn ?
+            <Button variant="link" color="white" m={"20px"}
+              onClick={() => setModalOpen(true)}>Log In</Button> :
             <Menu>
               <MenuButton _hover={{ textDecoration: "underline" }} fontWeight="medium">
                 <Flex alignItems={"center"} gap={2}>
@@ -707,16 +586,64 @@ const HeaderNew = () => {
                 <MenuItem _hover={{ backgroundColor: 'white', color: 'black' }} backgroundColor={"black"} onClick={() => loggedIn && logout()}>🚩 Log Out</MenuItem>
               </MenuList>
             </Menu>
-        }
+          }
+        </Box>
+
+        <Box display="flex" flexDirection="row" justifyContent="center" alignItems="center">
+
+          {isDesktop && (
+
+            <Box >
+              <HStack spacing={3} alignItems="center" m='2'>
+                <Link to="/dao" >
+                  {activeProposalsLength > 0 && (
+                    <Tooltip label={"Go Vote Bro! Its important!"} aria-label="Wallet" bg="black" borderRadius="md" border="orange 2px solid">
+                      <Button leftIcon={<FaVoteYea color="orange" />} m={1} backgroundColor="black" border="orange 2px solid" color="white" _hover={{ backgroundColor: "black" }}>
+
+                        {activeProposalsLength}
+                      </Button>
+                    </Tooltip>
+                  )}
+                </Link>
+                <Link to="/wallet" >
+                  {isDesktop && (
+                    <Tooltip label="Gnars Held by Connected Wallet" aria-label="Gnars" bg="black" borderRadius="md" border="yellow 2px solid">
+                      <Button m={1} backgroundColor="black" color="yellow" _hover={{ backgroundColor: "black" }}>
+                        <Image marginRight={"10px"} boxSize={"22px"} src="https://www.gnars.wtf/images/logo.png"></Image> {gnarsNFTsCount} <Text color="white" style={{ marginLeft: '5px' }}>Gnars</Text>
+                      </Button>
+                    </Tooltip>
+                  )}
+                  <Tooltip label="Hive Wallet Tokens in USD" aria-label="Wallet" bg="black" borderRadius="md" border="red 2px solid">
+                    <Button m={1} backgroundColor="black" color="white" _hover={{ backgroundColor: "black" }}>
+                      <Image marginRight={"10px"} boxSize={"22px"} src="https://cryptologos.cc/logos/hive-blockchain-hive-logo.png?v=026" />
+                      {totalWorth.toFixed(2)} <Text color="limegreen" style={{ marginLeft: '5px' }}>USD</Text>
+                    </Button>
+                  </Tooltip>
+                  {wallet_address && (
+                    <Tooltip label={"ETH address"} aria-label="Wallet" bg="black" borderRadius="md" border=" #7CC4FA 2px solid">
+                      <Button m={1} backgroundColor="black" color="white" _hover={{ backgroundColor: "black" }}>
+                        <Image
+                          marginRight={"10px"}
+                          boxSize={"22px"}
+                          src={nns?.data?.endsWith('.eth') ? "https://seeklogo.com/images/E/ethereum-name-service-ens-logo-9190A647F5-seeklogo.com.png" : "/assets/nogglescoin.gif"}
+                        />
+                        {nns?.data || formatWalletAddress(wallet_address)}
+                      </Button>
+                    </Tooltip>
+                  )}
+
+
+                </Link>
+
+              </HStack>
+            </Box>
+          )}
+        </Box>
       </Flex>
-      {!isDesktop && (
-        <Image paddingTop={"15px"} src="https://images.hive.blog/0x0/https://files.peakd.com/file/peakd-hive/web-gnar/23uQ3d5BKcoYkuYWd7kZrnS396M1M6DvsMa5MowAmaVynQr67ChnARGaFstnMGeSspzwR.png" alt="Skatehive Image" />
-      )}
 
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <HiveLogin isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
       </Modal>
-
     </Flex>
   );
 };

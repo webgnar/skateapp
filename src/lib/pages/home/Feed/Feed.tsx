@@ -15,10 +15,13 @@ import {
   Text,
   Tooltip,
   useDisclosure,
+  Avatar,
+  Switch,
+  ButtonGroup
 } from "@chakra-ui/react";
 import { Client, Discussion } from "@hiveio/dhive";
-import useAuthUser from "../api/useAuthUser";
-import voteOnContent from "../api/voting";
+import useAuthUser from "../../../components/auth/useAuthUser";
+import voteOnContent from "../../utils/hiveFunctions/voting";
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -30,12 +33,9 @@ import * as Types from "./types";
 
 import { MdArrowUpward } from "react-icons/md";
 import EarningsModal from "./postModal/earningsModal";
+import { DiscussionQueryCategory } from "@hiveio/dhive";
+import truncateTitle from "lib/pages/utils/truncateTitle";
 
-interface ErrorModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  errorMessage: string;
-}
 
 const nodes = [
   "https://api.deathwing.me",
@@ -65,7 +65,7 @@ const randomSentences = [
   "Who was Gnartoshi Shredamoto?",
   "We have secret sections here, can you find?",
 ];
-const SPECIAL_TAG = "crowsnight666";
+
 
 const PlaceholderLoadingBar = () => {
   const randomIndex = Math.floor(Math.random() * randomSentences.length);
@@ -73,18 +73,19 @@ const PlaceholderLoadingBar = () => {
 
   return (
     <center>
+      <Text marginBottom={"12px"} >{randomSentence}</Text>
+
       <Image
         borderRadius={"20px"}
         boxSize="100%"
         src="/assets/pepenation.gif"
       />
-      {/* <Text>{randomSentence}</Text> */}
     </center>
   );
 };
 
 const HiveBlog: React.FC<Types.HiveBlogProps> = ({
-  queryType = "created",
+  // queryType = "created",
   tag = process.env.COMMUNITY || "hive-173115",
 }) => {
   const [loadedPosts, setLoadedPosts] = useState<any[]>([]);
@@ -96,9 +97,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
   const [nodeIndex, setNodeIndex] = useState(0);
   const [comments, setComments] = useState<Types.CommentProps[]>([]);
   const [isVotersModalOpen, setVotersModalOpen] = useState(false);
-  const [selectedPostForModal, setSelectedPostForModal] = useState<any | null>(
-    null
-  );
+  const [selectedPostForModal, setSelectedPostForModal] = useState<any | null>(null);
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [displayedPosts, setDisplayedPosts] = useState<number>(20);
   const [postsToLoadInitially] = useState<number>(20); // Number of posts to load initially
@@ -107,8 +106,8 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
   const [hasVotedWitness, setHasVotedWitness] = useState<boolean>(false); // Step 4
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false); // Track modal visibility
   const [errorMessage, setErrorMessage] = useState<string>(""); // Track error message
-  const [currentThumbnail, setCurrentThumbnail] = useState<string>(""); // Track error message
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [queryType, setQueryType] = useState<DiscussionQueryCategory>('trending'); // Default to "created"
 
   const fetchPostEarnings = async (
     author: string,
@@ -228,8 +227,8 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
   };
 
   useEffect(() => {
-    fetchInitialPosts(); // Fetch initial posts when the component mounts
-  }, [currentTag]);
+    fetchInitialPosts(); // Fetch initial posts when the component mounts or queryType changes
+  }, [queryType]);
 
   const loadMorePosts = () => {
     fetchPosts(); // Fetch more posts when "Load More" is clicked
@@ -245,8 +244,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
         permlink,
         observer: user?.name || "",
       });
-      console.log("comments", comments);
-      // delete the original post from the comments object
+      // delete (the original post from the comments object
       // its key is @username/permlink
       const originalPostKey = `${author}/${permlink}`;
       delete comments[originalPostKey];
@@ -264,7 +262,6 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
           const subComment = subComments[i];
           comments[commentKey].repliesFetched.push(comments[subComment]);
         }
-
         // set net_votes of the comment with active_votes.length
         comments[commentKey].net_votes =
           comments[commentKey].active_votes.length;
@@ -353,17 +350,6 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
     }
   `;
 
-  const truncateTitle = (title: any, maxCharacters = 60) => {
-    // full caps for title of post
-    title = title.toUpperCase();
-
-    if (title.length <= maxCharacters) {
-      return title;
-    } else {
-      const truncatedTitle = title.substring(0, maxCharacters - 3) + "...";
-      return truncatedTitle;
-    }
-  };
   const handleVoteClick = async (post: any) => {
     if (!isLoggedIn()) {
       setErrorMessage("You have to login first ! Dãããã... ");
@@ -396,9 +382,6 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
       setIsErrorModalOpen(true);
     }
   };
-  const cardStyleGradient = css`
-    background-color: "linear-gradient(to top, #0D0D0D, #1C1C1C, #000000)";
-  `;
 
   const isVoted = (post: any) => {
     // check for user in active_votes
@@ -491,6 +474,26 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
             errorMessage={errorMessage}
           />
 
+
+
+          <Box display="flex" justifyContent="right" marginRight={"20px"} marginBottom={'5px'}>
+            <ButtonGroup size="sm" isAttached variant="outline" colorScheme="green">
+              <Button
+                onClick={() => setQueryType("created")}
+                isActive={queryType === "created"}
+              >
+                Most Recent
+              </Button>
+              <Button
+                onClick={() => setQueryType("trending")}
+                isActive={queryType === "trending"}
+              >
+                Trending
+              </Button>
+            </ButtonGroup>
+          </Box>
+
+
           <Box
             display="grid"
             gridTemplateColumns={`repeat(${gridColumns}, minmax(280px, 1fr))`}
@@ -524,10 +527,11 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                     <Heading
                       color="white"
                       paddingTop={"10px"}
-                      size="lg"
+                      fontSize="28px"
+                      marginTop={"15px"}
                       style={{
                         textShadow: "0 0 20px rgba(0, 255, 0, 0.7)", // Apply a green glow behind the text
-                        fontStyle: "", // Make the text italic
+
                       }}
                     >
                       {post.author}
@@ -539,7 +543,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                   <Image
                     key={post.id}
                     objectFit={"cover"}
-                    border="1px solid limegreen"
+                    border="1px solid #134a2f"
                     borderRadius="10px"
                     src={post.thumbnail || defaultThumbnail}
                     alt="Post Thumbnail"
@@ -562,17 +566,17 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                     minHeight="100%"
                     style={{
                       //style of the speech bubble
-                      backgroundImage: `url('https://images.hive.blog/0x0/https://files.peakd.com/file/peakd-hive/web-gnar/23tGLtmE5K6ovFdVS4tYwA5yfJ4S3vnByzcg7BshwvCN1r5Jbmz8NmNm9CUKBm91FVFqT.png')`,
+                      // backgroundImage: `url('https://images.hive.blog/0x0/https://files.peakd.com/file/peakd-hive/web-gnar/23tGLtmE5K6ovFdVS4tYwA5yfJ4S3vnByzcg7BshwvCN1r5Jbmz8NmNm9CUKBm91FVFqT.png')`,
                       backgroundSize: "100% 100%", // stretches the speech bubble as big as the div and dynamically changes
                       backgroundPosition: "center",
                       backgroundRepeat: "no-repeat",
                       marginBottom: "-40px", // makes the speech bubble extend beyond the div
-                      paddingBottom: "40px", // for some reason it needs this part too?
+                      paddingBottom: "30px", // for some reason it needs this part too?
                     }}
                   >
                     <Text
                       fontWeight="semibold"
-                      color="orange"
+                      color="grey"
                       paddingLeft="5px"
                       paddingTop="10px"
                       paddingRight="5px"
@@ -609,15 +613,12 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                     style={{ display: "flex", alignItems: "center" }}
                   >
                     <Link to={`profile/${post.author}`}>
-                      <Image
+                      <Avatar
                         border="0px solid limegreen"
                         borderRadius="10px"
                         src={`https://images.ecency.com/webp/u/${post.author}/avatar/small`}
-                        width="105%"
-                        height="105%"
-                        style={{
-                          boxShadow: "0 8px 12px rgba(0, 0, 0, 0.8)", // Adding a drop shadow
-                        }}
+                        boxSize={"60px"}
+
                       />
                     </Link>
 
@@ -647,7 +648,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                         size="s"
                         ml={2}
                         style={{
-                          fontFamily: "Helvetica",
+
                           fontSize: `${Math.min(
                             46,
                             13 + post.earnings * 1.2
@@ -660,13 +661,13 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                         }}
                       >
                         <span
-                          style={{ fontFamily: "serif", color: "chartreuse" }}
+                          style={{ color: "" }}
                         >
                           $
                         </span>
                         {post.earnings.toFixed(2)}
 
-                        <img //spinning stoken coin
+                        {/* <img //spinning stoken coin
                           src="https://i.ibb.co/16vCTVT/coin-mental-33px.gif"
                           alt="spinning stoken coin"
                           style={{
@@ -682,7 +683,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                             marginLeft: "7px",
                             marginBottom: "2px",
                           }}
-                        />
+                        /> */}
                       </Button>
                     </Tooltip>
                   </Text>
@@ -705,7 +706,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                         backgroundColor="black"
                         color="white"
                         size="sm"
-                        borderRadius="50%"
+                        borderRadius="40%"
                         aria-label="Upvote"
                         border="1px"
                         borderColor="limegreen"
@@ -733,7 +734,8 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
           </Box>
           {isLoadingMore && <PlaceholderLoadingBar />}
         </>
-      )}
+      )
+      }
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
         <ModalContent>
@@ -769,7 +771,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
           />
         </ModalContent>
       </Modal>
-    </Box>
+    </Box >
   );
 };
 

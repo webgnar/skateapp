@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-
+import OpenAI from 'openai';
 import {
   Modal,
   ModalOverlay,
@@ -28,13 +28,13 @@ import { Client, PrivateKey } from '@hiveio/dhive';
 import PostHeader from './postModalHeader';
 import PostFooter from './postModalFooter';
 import Comments from './comments';
-import voteOnContent from '../../api/voting';
-import useAuthUser from '../../api/useAuthUser';
+import voteOnContent from '../../../utils/hiveFunctions/voting';
+import useAuthUser from '../../../../components/auth/useAuthUser';
 import CommentBox from './commentBox';
 import * as Types from '../types';
 import { MarkdownRenderers } from '../../../utils/MarkdownRenderers';
 import { transformComplexMarkdown } from '../../../utils/transformComplexMarkdown';
-import HiveLogin from '../../api/HiveLoginModal';
+import HiveLogin from '../../../../components/auth/HiveLoginModal';
 const nodes = [
   "https://api.deathwing.me",
   "https://api.hive.blog",
@@ -45,13 +45,14 @@ const nodes = [
 ];
 
 import { transformGiphyLinksToMarkdown } from 'lib/pages/utils/ImageUtils';
-import { transform3SpeakContent, transformYouTubeContent } from 'lib/pages/utils/videoFunctions/videoUtils';
+import { transform3SpeakContent, transformYouTubeContent, transformIPFSContent } from 'lib/pages/utils/videoFunctions/videoUtils';
 import { slugify } from 'lib/pages/utils/videoFunctions/slugify';
 import { json } from 'stream/consumers';
 import { diff_match_patch } from 'diff-match-patch';
 import { FaPencil } from 'react-icons/fa6';
 import { FaShare, FaEye } from 'react-icons/fa';
 import { FaXTwitter } from "react-icons/fa6";
+import { get } from 'http';
 
 const PostModal: React.FC<Types.PostModalProps> = ({
   isOpen,
@@ -82,6 +83,7 @@ const PostModal: React.FC<Types.PostModalProps> = ({
   const [selectedThumbnail, setSelectedThumbnail] = useState<string | null>(null);
   const [postImages, setPostImages] = useState<string[]>([]);
   const [originalThumb, setOriginalThumb] = useState<string | null>(null);
+  const [loadingSummaries, setLoadingSummaries] = useState<boolean>(true);
 
 
   const extractImagesFromContent = (content: string): string[] => {
@@ -210,10 +212,6 @@ const PostModal: React.FC<Types.PostModalProps> = ({
     setIsEditing(true);
   };
 
-  const generatePostUrl = () => {
-    return `${window.location.origin}/post${postUrl}`;
-  };
-
 
   //  ---------------------------------------Voting Button -------------------------------
 
@@ -257,14 +255,10 @@ const PostModal: React.FC<Types.PostModalProps> = ({
     comments,
     postUrl,
   };
-  const handleViewFullPost = (event: any) => {
-    event.stopPropagation(); // Prevent event from bubbling up to the parent
-    console.log(window.location.protocol + '//' + postUrl);
-
-  };
+  const generatePostUrl = () => {
+    return `https://skatehive.app/post${postUrl}`;
+  }
   const cleanUrl = generatePostUrl().replace(window.location.origin, '');
-
-  const postLink = window.location.protocol + '//' + postUrl;
   const [postLinkCopied, setPostLinkCopied] = useState(false);
 
   const handleCopyPostLink = () => {
@@ -281,55 +275,81 @@ const PostModal: React.FC<Types.PostModalProps> = ({
     }
   };
 
-  const handleShareWarpCast = () => {
-    try {
-      const postPageUrl = generatePostUrl();
-      // apen a new tab https://warpcast.com/~/compose?text= + postPageUrl
-      window.open('https://warpcast.com/~/compose?text=' + "I am shredding on my last SkateHive post, check it out: " + postPageUrl, '_blank');
+  // -------- AI STUFF ----------------
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || '',
+    dangerouslyAllowBrowser: true,
+  });
 
+  const [tweetSummary, setTweetSummary] = useState('Skateboard is Cool');
+
+  const getSummary = async (body: string) => {
+    const prompt = `Summarize this content into a tweet-friendly sentence in up to 70 caracters. Exclude emojis and special characters that might conflict with URLs. Omit any 'Support Skatehive' sections. dont use emojis Content, dont use hashtags, ignore links: ${body}`;
+    const response = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-3.5-turbo',
+    });
+    const summary = response.choices[0]?.message?.content || 'Check my new Post on Skatehive';
+    const encodedSummary = encodeURIComponent(summary);
+    return encodedSummary;
+  };
+
+  const handleShareWarpCast = async () => {
+    try {
+      const postPageUrl = encodeURI(generatePostUrl());
+      const summary = await getSummary(content);
+      setTweetSummary(summary);
+      const warptext = `${summary} ${postPageUrl}`;
+
+      window.open(`https://warpcast.com/~/compose?text=${warptext}`, '_blank');
     }
     catch (error) {
       console.error('Failed to share in WarpCast:', error);
     }
   }
 
-  const handleShareTwitter = () => {
+  const handleShareTwitter = async () => {
     try {
-      const postPageUrl = generatePostUrl();
-      // apen a new tab https://warpcast.com/~/compose?text= + postPageUrl
-      window.open('https://twitter.com/intent/tweet?text=' + "I am shredding on my last SkateHive post, check it out: " + postPageUrl, '_blank');
+      const postPageUrl = encodeURI(generatePostUrl());
+      console.log(postPageUrl);
+      const summary = await getSummary(content);
+      setTweetSummary(summary);
+      // assemble text + url in just one string 
+      const tweetText = `${summary} ${postPageUrl}`;
+      window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
 
     }
     catch (error) {
-      console.error('Failed to share in WarpCast:', error);
+      console.error('Failed to share in Twitter:', error);
     }
   }
 
   let transformedContent = transformYouTubeContent(content);
   transformedContent = transformComplexMarkdown(transformedContent);
+  transformedContent = transformIPFSContent(transformedContent);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="3xl">
       <ModalOverlay style={{ background: 'rgba(0, 0, 0, 0.8)' }} />
-      <ModalContent backgroundColor={'black'} boxShadow="0px 0px 10px 5px rgba(128,128,128,0.1)">
+      <ModalContent backgroundColor={'black'} boxShadow="0px 0px 6px 0.5px limegreen">
         <ModalHeader>
           <PostHeader title={title} author={author} avatarUrl={avatarUrl} postUrl={postUrl} permlink={permlink} onClose={onClose} />
           <HStack justifyContent="space-between">
 
-            <Button leftIcon={<FaShare />} color="white" bg="black" border="1px solid orange" margin="15px" display={{ base: 'none', md: 'flex' }} onClick={handleCopyPostLink}>
+            <Button _hover={{ backgroundColor: 'black', color: 'limegreen' }} leftIcon={<FaShare />} color="white" bg="black" border="1px solid limegreen" margin="15px" display={{ base: 'none', md: 'flex' }} onClick={handleCopyPostLink}>
               {postLinkCopied ? 'Link Copied!' : 'Share Post'}
             </Button>
-            <Button leftIcon={<img src="/assets/warpcast.png" alt="WarpCast" style={{ width: '20px', marginRight: '5px' }} />} color="white" bg="black" border="1px solid orange" margin="15px" display={{ base: 'none', md: 'flex' }} onClick={handleShareWarpCast}>
+            <Button _hover={{ backgroundColor: 'purple', color: 'white' }} leftIcon={<img src="/assets/warpcast.png" alt="WarpCast" style={{ width: '20px', marginRight: '5px' }} />} color="white" bg="black" border="2px solid purple" margin="15px" display={{ base: 'none', md: 'flex' }} onClick={handleShareWarpCast}>
               {postLinkCopied ? 'Share it' : 'WarpCast'}
             </Button>
-            <Button leftIcon={<FaXTwitter />} color="white" bg="black" border="1px solid orange" margin="15px" display={{ base: 'none', md: 'flex' }} onClick={handleShareTwitter}>
+            <Button _hover={{ backgroundColor: 'white', color: 'black' }} leftIcon={<FaXTwitter />} color="white" bg="black" border="1px solid white" margin="15px" display={{ base: 'none', md: 'flex' }} onClick={handleShareTwitter}>
               {postLinkCopied ? 'Share it!' : 'Twitter'}
             </Button>
-            <Link to={{ pathname: cleanUrl, state: { post: postData } } as any}>
-              <Button leftIcon={<FaEye />} color="white" bg="black" margin="15px" border="1px solid orange">
+            <a href={generatePostUrl()}>
+              <Button _hover={{ backgroundColor: 'black', color: 'limegreen' }} leftIcon={<FaEye />} color="white" bg="black" margin="15px" border="1px solid limegreen">
                 View Page
               </Button>
-            </Link>
+            </a>
           </HStack>
         </ModalHeader>
 

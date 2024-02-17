@@ -1,9 +1,9 @@
 import { useMediaQuery, AspectRatio, Image, Box, Flex, Tabs, TabList, TabPanels, Tab, TabPanel, Text, Tooltip, Button, List, ListItem, Avatar } from "@chakra-ui/react";
 import React, { useEffect, useState } from 'react';
-import HiveBlog from "../home/Feed/Feed";
+import AuthorHiveBlog from "../home/Feed/AuthorHiveBlog";
 import { useParams } from 'react-router-dom';
 import { Client } from "@hiveio/dhive";
-import useAuthUser from "../home/api/useAuthUser";
+import useAuthUser from "../../components/auth/useAuthUser";
 import axios from 'axios';
 import { KeychainSDK, KeychainKeyTypes } from "keychain-sdk";
 import { Custom } from "keychain-sdk";
@@ -291,7 +291,7 @@ export default function AuthorProfilePage() {
 
             <TabPanels>
               <TabPanel>
-                {selectedTabIndex === 0 && <HiveBlog tag={username} queryType={"blog"} />}
+                {selectedTabIndex === 0 && <AuthorHiveBlog tag={username} queryType={"blog"} />}
               </TabPanel>
               <TabPanel>
                 {selectedTabIndex === 1 && (

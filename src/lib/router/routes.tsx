@@ -1,5 +1,4 @@
 import Page404 from "lib/pages/404";
-import DaoStatus from "lib/pages/home/dao/DaoStatus";
 import SubscriberList from "lib/pages/home/dao/components/steemskate/subscribers";
 import UploadPage from "lib/pages/upload";
 import React from "react";
@@ -9,6 +8,8 @@ import Faq from "lib/pages/faq";
 import SkatehiveProposals from "lib/pages/home/dao/snapshot";
 import Plaza from "lib/pages/home/plaza";
 import HiveBlog from "lib/pages/home/Feed/Feed";
+import CheckDelegation from "lib/pages/home/dao/components/ethereum/delegationChecker";
+import WalletVotesInfo from "lib/pages/home/dao/components/ethereum/delegationChecker";
 const Home = React.lazy(() => import("lib/pages/home"));
 const Wallet = React.lazy(() => import("lib/pages/wallet"));
 const Profile = React.lazy(() => import("lib/pages/profile"));
@@ -17,9 +18,7 @@ const BeCool = React.lazy(() => import("lib/pages/profile/beCool"));
 const TutorialPage = React.lazy(() => import("lib/pages/home/tutorialPage"));
 const PostPage = React.lazy(() => import("lib/pages/postpage"));
 const QFS = React.lazy(() => import("lib/pages/qfs"));
-const Test = React.lazy(() => import("lib/pages/home/dao/components/ethereum/gnarsDelegation"));
 const GnarsStats = React.lazy(() => import("lib/pages/home/dao/components/hiveGnars/gnars"));
-const ThatsGnarly = React.lazy(() => import("lib/pages/home/Feed/thatsgnarly"));
 const PepeCaptcha = React.lazy(() => import("lib/pages/secret-spot"));
 const NewUpload = React.lazy(() => import("lib/pages/upload/newUpload"));
 const Shelf = React.lazy(() => import("lib/pages/home/videos/lbry"));
@@ -28,6 +27,8 @@ const Members = React.lazy(() => import("lib/pages/home/dao/components/steemskat
 const GnarsDelegation = React.lazy(() => import("lib/pages/home/dao/components/ethereum/gnarsDelegation"));
 const GnarsHolders = React.lazy(() => import("lib/pages/home/dao/components/ethereum/gnarsDelegation2"));
 const AccountCreation = React.lazy(() => import("lib/pages/secret-spot/AccountCreation"));
+const delegationChecker = React.lazy(() => import("lib/pages/home/dao/components/ethereum/delegationChecker"));
+
 export const routes: Array<PathRouteProps> = [
   {
     path: "/",
@@ -42,7 +43,10 @@ export const routes: Array<PathRouteProps> = [
     path: "/wallet",
     element: <Wallet />,
   },
-  { path: "/plaza", element: <Plaza /> },
+  {
+    path: "/plaza",
+    element: <Plaza URLPermlink="test-advance-mode-post" URLAuthor="skatehacker" compWidth="60%" />
+  },
   {
     path: "/profile",
     element: <Profile />,
@@ -85,21 +89,10 @@ export const routes: Array<PathRouteProps> = [
     element: <GnarsStats />,
   },
   {
-    path: "/thatsgnarly",
-    element: <ThatsGnarly />,
-  },
-  {
     path: "/secret",
     element: <PepeCaptcha />,
   },
-  {
-    path: "/newupload",
-    element: <NewUpload />,
-  },
-  {
-    path: "/test",
-    element: <Test />,
-  },
+
   {
     path: "/secret",
     element: <Shelf />,
@@ -131,6 +124,14 @@ export const routes: Array<PathRouteProps> = [
   {
     path: "/blog",
     element: <HiveBlog />,
+  },
+  {
+    path: "/checker",
+    element: <WalletVotesInfo />,
+  },
+  {
+    path: "*",
+    element: <Page404 />,
   },
 ];
 

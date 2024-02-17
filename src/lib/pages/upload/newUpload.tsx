@@ -18,7 +18,7 @@ import ReactMarkdown from "react-markdown";
 import { useDropzone } from "react-dropzone";
 import { MarkdownRenderersUpload } from "../utils/MarkdownRenderersUpload";
 import { FaImage } from "react-icons/fa";
-import useAuthUser from '../home/api/useAuthUser';
+import useAuthUser from '../../components/auth/useAuthUser';
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { slugify } from "../utils/videoFunctions/slugify";
@@ -34,7 +34,9 @@ import { transformYouTubeContent } from "../utils/videoFunctions/videoUtils";
 import { transform3SpeakContent } from "../utils/videoFunctions/videoUtils";
 import { transformGiphyLinksToMarkdown } from '../utils/ImageUtils';
 import { transformComplexMarkdown } from '../utils/transformComplexMarkdown';
-
+import { extractImageUrls } from "../utils/ImageUtils";
+// import react confetti 
+import Confetti from 'react-confetti';
 import {
   get3SpeakAuthStatus,
   Connect3Speak,
@@ -43,15 +45,6 @@ import {
   setVideoInfoOn3Speak,
   setAsPublishedOn3Speak,
 } from "./3speak";
-
-const apiEndpoints = [
-  "https://api.hive.blog",
-  "https://api.hivekings.com",
-  "https://anyx.io",
-  "https://api.openhive.network",
-];
-
-const client = new Client(apiEndpoints);
 
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_API_SECRET = process.env.PINATA_API_SECRET;
@@ -98,6 +91,7 @@ const NewUpload: React.FC = () => {
   const [includeFooter, setIncludeFooter] = useState<boolean>(false); // New state for the checkbox
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [postLink, setPostLink] = useState<string>("");
+  const [isMobile] = useMediaQuery("(max-width: 768px)");
 
   // 3Speak state
   const [is3speakPost, setIs3speakPost] = useState<boolean>(false);
@@ -106,11 +100,36 @@ const NewUpload: React.FC = () => {
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [videoInfo, setVideoInfo] = useState<any>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null); // for viewing in editor
+  const [videoComponent, setVideoComponent] = useState<JSX.Element | null>(null);
   const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string | null>(null);
+  const [confetti, setConfetti] = useState(false);
+
 
   useEffect(() => {
     setTags(defaultTags);
   }, []);
+
+  useEffect(() => {
+    // set video file
+    if (videoFile) {
+      const video = URL.createObjectURL(videoFile);
+      const videoComponent = (
+        <video
+          controls
+          style={{
+            width: "auto",
+            height: "auto",
+            maxWidth: "100%",
+            maxHeight: "600px",
+          }}
+          id="main-video"
+        >
+          <source src={video} type="video/mp4" />
+        </video>
+      );
+      setVideoComponent(videoComponent);
+    }
+  }, [videoFile]);
 
   const handleMarkdownChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMarkdownText(event.target.value);
@@ -127,18 +146,15 @@ const NewUpload: React.FC = () => {
     setTitle(event.target.value);
     buildPostLink();
   };
-
   const handleImageUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setImageUrl(event.target.value);
   };
-
   const addImageToMarkdown = () => {
     if (imageUrl) {
       setMarkdownText((prevMarkdown) => `${prevMarkdown}\n![Image](${imageUrl})`);
       setThumbnailUrl(imageUrl);
     }
   };
-
   const uploadFileToIPFS = async (file: File) => {
     try {
       if (file.type.startsWith("video/mp4")) {
@@ -210,8 +226,6 @@ const NewUpload: React.FC = () => {
       console.error("Error uploading file:", error);
     }
   };
-
-
   const onDropImages = async (acceptedFiles: File[]) => {
     setIsUploading(true);
 
@@ -264,7 +278,6 @@ const NewUpload: React.FC = () => {
     }
 
   };
-
   const onDropVideos = async (acceptedFiles: File[]) => {
     setIsUploading(true);
 
@@ -274,36 +287,18 @@ const NewUpload: React.FC = () => {
 
     setIsUploading(false);
   };
-
-  const { getRootProps: getImagesRootProps, getInputProps: getImagesInputProps } =
-    useDropzone({
-      onDrop: onDropImages,
-      //@ts-ignore
-      accept: "image/*",
-      multiple: false,
-    });
-
-  const { getRootProps: getVideosRootProps, getInputProps: getVideosInputProps } =
-    useDropzone({
-      onDrop: onDropVideos,
-      //@ts-ignore
-      accept: "video/mp4",
-      multiple: false,
-    });
-
-  const [isMobile] = useMediaQuery("(max-width: 768px)");
-
-  const extractImageUrls = (markdownText: string): string[] => {
-    const regex = /!\[.*?\]\((.*?)\)/g;
-    const imageUrls: string[] = [];
-    let match = regex.exec(markdownText);
-    while (match) {
-      imageUrls.push(match[1]);
-      match = regex.exec(markdownText);
-    }
-    return imageUrls;
-  };
-
+  const { getRootProps: getImagesRootProps, getInputProps: getImagesInputProps } = useDropzone({
+    onDrop: onDropImages,
+    //@ts-ignore
+    accept: "image/*",
+    multiple: false,
+  });
+  const { getRootProps: getVideosRootProps, getInputProps: getVideosInputProps } = useDropzone({
+    onDrop: onDropVideos,
+    //@ts-ignore
+    accept: "video/mp4",
+    multiple: false,
+  });
   const setVideoThumbnail = async () => {
     const frame = captureVideoFrame("main-video", "jpeg");
     if (frame) {
@@ -319,7 +314,6 @@ const NewUpload: React.FC = () => {
       uploadThumbnailTo3Speak(file, setIsUploading, videoInfo, setVideoInfo, setVideoThumbnailUrl, setThumbnailUrl);
     }
   };
-
   const renderThumbnailOptions = () => {
     const selectedThumbnailStyle = {
       border: '2px solid limegreen',
@@ -356,7 +350,6 @@ const NewUpload: React.FC = () => {
 
     return options;
   };
-
   const handleHiveUpload = async () => {
     if (!user) {
       alert("You have to log in with Hive Keychain to use this feature...");
@@ -510,7 +503,7 @@ const NewUpload: React.FC = () => {
           'comment',
           {
             parent_author: '',
-            // parent_permlink: 'testing67',
+            // parent_permlink: 'testing70',
             parent_permlink: process.env.COMMUNITY || 'hive-173115',
             author: username,
             permlink: videoPermlink ? videoPermlink : permlink, // Use the video permlink if video is uploaded on 3Speak
@@ -518,7 +511,7 @@ const NewUpload: React.FC = () => {
             body: finalMarkdown, // Use the complete post body here
             json_metadata: JSON.stringify({
               tags: tags, // Pass the 'tags' array here
-              app: 'skatehive',
+              app: 'Skatehive App',
               image: finalThumbnailUrl ? [finalThumbnailUrl] : [], // Replace 'thumbnailIpfsURL' with 'thumbnailUrl'
             }),
           },
@@ -539,12 +532,13 @@ const NewUpload: React.FC = () => {
             //   window.alert('Video successfully published on 3Speak!');
             // }
 
-            // reload the page
-            // wait 5 seconds and the reload the page
-            setTimeout(() => {
-              window.location.reload();
-            }, 5000);
+            // trigger react confetti 
+            setConfetti(true);
 
+            // wait 5 seconds and send the user home
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 5000);
             if (isVideoUploaded) {
               window.alert('Video successfully published on 3Speak! It will be available soon!');
             }
@@ -558,8 +552,6 @@ const NewUpload: React.FC = () => {
       }
     }
   };
-
-
   const handleTagsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value;
     // Check if the last character is a comma or space
@@ -582,8 +574,6 @@ const NewUpload: React.FC = () => {
       setTagsInput(inputValue);
     }
   };
-
-
   // Function to render the tags as badges
   const renderTags = () => {
     return tags.map((tag, index) => (
@@ -630,8 +620,6 @@ const NewUpload: React.FC = () => {
       </Flex>
     ));
   };
-
-
   // Function to parse and set the tags
   const handleTagsSubmit = () => {
     // Split the input value by commas and trim whitespace
@@ -640,7 +628,6 @@ const NewUpload: React.FC = () => {
     // Clear the input field
     setTagsInput("");
   };
-
   // Function to handle the checkbox change
   const handleIncludeFooterChange = () => {
     setIncludeFooter((prevIncludeFooter) => !prevIncludeFooter);
@@ -654,11 +641,9 @@ const NewUpload: React.FC = () => {
       setMarkdownText((prevMarkdown) => prevMarkdown + defaultFooter);
     }
   };
-
   // -------------------------Add Beneficiaries--------------------------
 
   const searchBarRef: RefObject<HTMLDivElement> = useRef(null);
-
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const handleAuthorSearch = (searchUsername: string) => {
     const percentage = 10;
@@ -676,13 +661,11 @@ const NewUpload: React.FC = () => {
 
     console.log("Search username:", searchUsername);
   };
-
   const handleBeneficiaryPercentageChange = (index: number, newPercentage: number) => {
     const updatedBeneficiaries = [...beneficiaries];
     updatedBeneficiaries[index].percentage = newPercentage;
     setBeneficiaries(updatedBeneficiaries);
   };
-
   const beneficiariesArray: BeneficiaryForBroadcast[] = [
     ...beneficiaries,
     ...defaultBeneficiaries,
@@ -706,7 +689,6 @@ const NewUpload: React.FC = () => {
   const toggleAdvancedOptions = () => {
     setShowAdvancedOptions((prevShow) => !prevShow);
   };
-
 
   return (
     <Box>
@@ -734,6 +716,8 @@ const NewUpload: React.FC = () => {
           </Badge>
         </VStack>
       </Box> */}
+      {confetti && <Confetti />}
+
       <Flex minWidth={"100%"}
         flexDirection={isMobile ? "column" : "row"}
       >
@@ -929,23 +913,8 @@ const NewUpload: React.FC = () => {
               >
                 Set Video Thumbnail
               </Button>
-              <video
-                src={videoFile ? URL.createObjectURL(videoFile) : ''}
+              {/* <video
                 controls
-                onLoadedData={async () => {
-                  // when the video is ready to play, focus on it
-
-                  // current focused element
-                  const focused = document.activeElement as HTMLElement;
-
-                  // focus on the video
-                  // this is needed to capture the frame without manually playing the video
-                  const video = document.getElementById("main-video") as HTMLVideoElement;
-                  video?.focus();
-
-                  // now focus on the previous element
-                  focused?.focus();
-                }}
                 style={{
                   width: "auto",
                   height: "auto",
@@ -953,7 +922,8 @@ const NewUpload: React.FC = () => {
                   maxHeight: "600px",
                 }}
                 id="main-video"
-              />
+              /> */}
+              {videoComponent}
             </Box>
           ) : ''}
           <ReactMarkdown
