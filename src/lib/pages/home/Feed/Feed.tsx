@@ -17,7 +17,8 @@ import {
   useDisclosure,
   Avatar,
   Switch,
-  ButtonGroup
+  ButtonGroup,
+  HStack
 } from "@chakra-ui/react";
 import { Client, Discussion } from "@hiveio/dhive";
 import useAuthUser from "../../../components/auth/useAuthUser";
@@ -35,6 +36,7 @@ import { MdArrowUpward } from "react-icons/md";
 import EarningsModal from "./postModal/earningsModal";
 import { DiscussionQueryCategory } from "@hiveio/dhive";
 import truncateTitle from "lib/pages/utils/truncateTitle";
+import { IoDiamond } from "react-icons/io5";
 
 
 const nodes = [
@@ -51,19 +53,28 @@ const defaultThumbnail =
 const placeholderEarnings = 69.42;
 
 const randomSentences = [
-  // "Have a spooky Skateboarding!",
   "Don't mall grab, or do it, you do you...",
   "'Ok to push Mongo, it is! -master yoda'",
   "Roll one, and play some stoken.quest?",
-  "Remember Mirc times ?",
+  "Remember Mirc times?",
   "Fuck instagram!",
   "Ready to grind on chain?",
   "Praise whoever made skatevideosite",
   "Loading Stokenomics...",
   "Initiating Proof of Stoke...",
   "We will load as fast as Daryl Rolls",
-  "Who was Gnartoshi Shredamoto?",
+  "Who was Gnartoshi Shredmoto?",
   "We have secret sections here, can you find?",
+  "We dont store any data, we dont even know how to do that",
+  "P-rod said that NOW the flip ins and flip outs are too much...",
+  "SkateHive is really made by skaters, that actually skate, the 4 stances and more.",
+  "If its a quick post, do it in Plaza. If its a long form post do it in Mag",
+  "If you need help, roll a joint and joint or grab a beer and discord.gg/skateboard",
+  "You can downvote stuff if you think it sucks",
+  "One day you will get our /wallet and /dao pages, take your time...",
+  "Do you remember your first kickflip? I dont I am a robot",
+  "You Skate? Congrats this site is yours and its money is for you.",
+
 ];
 
 
@@ -143,12 +154,16 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
   function getPostDataFromPosts(posts: Discussion[]) {
     return posts.map((post) => {
       const metadata = JSON.parse(post.json_metadata);
+      const app = metadata.app; // Extract the app field
       const thumbnail =
-        metadata.thumbnail || extractFirstLink(post.body) || defaultThumbnail;
+        metadata.image && metadata.image.length > 0
+          ? metadata.image[0]
+          : extractFirstLink(post.body) || defaultThumbnail;
 
-      return { ...post, thumbnail, earnings: 0 };
+      return { ...post, thumbnail, earnings: 0, app }; // Include the app in the return object
     });
   }
+
 
   const fetchPosts = async () => {
     setIsLoadingMore(true); // Set loading state when "Load More" is clicked
@@ -523,21 +538,25 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
                     borderRadius="10px"
                     justifyContent="center" /* Center the content horizontally */
                     alignItems="center"
+                    position="relative"
+                    marginTop={"20px"}
                   >
-                    <Heading
-                      color="white"
-                      paddingTop={"10px"}
-                      fontSize="28px"
-                      marginTop={"15px"}
-                      style={{
-                        textShadow: "0 0 20px rgba(0, 255, 0, 0.7)", // Apply a green glow behind the text
-
-                      }}
-                    >
+                    <Heading color="white" fontSize="28px" style={{ textShadow: "0 0 20px rgba(0, 255, 0, 0.7)" }}>
                       {post.author}
                     </Heading>
+
+                    {post.app === "Skatehive App" || post.app === "skatehive" ?
+                      <Box position="absolute" right="0" display="flex" alignItems="center" paddingRight={"10px"}>
+                        <Tooltip label="This post was created with the Skatehive app. This guys knows stuff" placement="right-start" bg={"black"} borderRadius={'10px'} border={'1px dashed gold'}>
+                          <Box display="inline-flex" alignItems="center">
+                            <IoDiamond size={'30px'} color="black" style={{ filter: 'drop-shadow(0 0 1px gold) drop-shadow(0 0 1px gold)' }} />
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                      : null}
                   </Flex>
                 </CardHeader>
+
 
                 <Box padding="20px" marginBottom={"10px"} height="200px">
                   <Image
@@ -754,6 +773,7 @@ const HiveBlog: React.FC<Types.HiveBlogProps> = ({
             json_metadata={selectedPost?.json_metadata}
             images={selectedPost?.images}
             thumbnail={selectedPost?.thumbnail}
+            createdAt={selectedPost?.created}
           />
         </ModalContent>
       </Modal>

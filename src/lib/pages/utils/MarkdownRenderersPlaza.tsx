@@ -81,7 +81,7 @@ const getPost = async (author: string, permlink: string): Promise<PostDetails | 
   }
 };
 
-export const MarkdownRenderers = {
+export const MarkdownRenderersPlaza = {
   img: ({ alt, src, title, ...props }: RendererProps) => {
     // if the image is inline, it will have position start column > 1
     let isInline = false;
@@ -97,7 +97,7 @@ export const MarkdownRenderers = {
         title={title}
         style={{
           display: 'inline-block',
-          maxWidth: '100%',
+          width: '50%',
           height: 'auto',
           borderRadius: '10px',
           marginTop: '20px',
@@ -288,7 +288,7 @@ export const MarkdownRenderers = {
       <video
         {...props}
         src={src}
-        style={{ borderRadius: '10px', marginBottom: '20px', border: '2px grey solid', minWidth: '60%', minHeight: '40%' }}
+        style={{ borderRadius: '10px', marginBottom: '20px', border: '2px grey solid', width: '50%', maxWidth: '50%' }}
       />
     </div>
   ),

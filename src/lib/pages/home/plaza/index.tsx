@@ -28,6 +28,7 @@ import voteOnContent from "../../utils/hiveFunctions/voting";
 
 import CommentBox from "../Feed/postModal/commentBox";
 import Comments from "../Feed/postModal/comments";
+import { MarkdownRenderersPlaza } from "lib/pages/utils/MarkdownRenderersPlaza";
 
 type User = {
   name: string;
@@ -87,7 +88,6 @@ const Plaza: React.FC<PlazaProps> = ({ URLPermlink = "test-advance-mode-post", U
         URLAuthor,
         URLPermlink,
       ]);
-      console.log(postData);
       setPost({ ...postData });
     } catch (error) {
       console.error("Error fetching post data:", error);
@@ -502,7 +502,7 @@ const Plaza: React.FC<PlazaProps> = ({ URLPermlink = "test-advance-mode-post", U
                 children={commentContent}
                 rehypePlugins={[rehypeRaw]}
                 remarkPlugins={[remarkGfm]}
-                components={MarkdownRenderers}
+                components={MarkdownRenderersPlaza}
               />
             </Box>
           )}
@@ -587,7 +587,7 @@ const Plaza: React.FC<PlazaProps> = ({ URLPermlink = "test-advance-mode-post", U
                       children={comment.body}
                       rehypePlugins={[rehypeRaw]}
                       remarkPlugins={[remarkGfm]}
-                      components={MarkdownRenderers}
+                      components={MarkdownRenderersPlaza}
                     />
 
                     <Flex justifyContent="space-between" mt="4">

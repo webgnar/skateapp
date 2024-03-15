@@ -28,6 +28,8 @@ const GnarsDelegation = React.lazy(() => import("lib/pages/home/dao/components/e
 const GnarsHolders = React.lazy(() => import("lib/pages/home/dao/components/ethereum/gnarsDelegation2"));
 const AccountCreation = React.lazy(() => import("lib/pages/secret-spot/AccountCreation"));
 const delegationChecker = React.lazy(() => import("lib/pages/home/dao/components/ethereum/delegationChecker"));
+const SwapComponent = React.lazy(() => import("lib/pages/swap"));
+const ProposalPage = React.lazy(() => import("lib/pages/home/dao/newProposalPage"));
 
 export const routes: Array<PathRouteProps> = [
   {
@@ -133,6 +135,14 @@ export const routes: Array<PathRouteProps> = [
     path: "*",
     element: <Page404 />,
   },
+  {
+    path: "/swap",
+    element: <SwapComponent />,
+  },
+  {
+    path: "/newProposal",
+    element: <ProposalPage />,
+  }
 ];
 
 export const privateRoutes: Array<PathRouteProps> = [];

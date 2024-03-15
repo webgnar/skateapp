@@ -46,6 +46,9 @@ import {
   setAsPublishedOn3Speak,
 } from "./3speak";
 
+import SocialModal from "./socialModal";
+
+
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_API_SECRET = process.env.PINATA_API_SECRET;
 const PINATA_GATEWAY_TOKEN = process.env.PINATA_GATEWAY_TOKEN;
@@ -103,6 +106,7 @@ const NewUpload: React.FC = () => {
   const [videoComponent, setVideoComponent] = useState<JSX.Element | null>(null);
   const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string | null>(null);
   const [confetti, setConfetti] = useState(false);
+  const [isSocialModalOpen, setIsSocialModalOpen] = useState<boolean>(false);
 
 
   useEffect(() => {
@@ -336,7 +340,6 @@ const NewUpload: React.FC = () => {
         alignItems="center"
         onClick={() => {
           setThumbnailUrl(imageUrl);
-          console.log("Selected Thumbnail:", imageUrl); // Log selected thumbnail URL
         }}
         style={imageUrl === thumbnailUrl ? selectedThumbnailStyle : {}}
       >
@@ -366,10 +369,10 @@ const NewUpload: React.FC = () => {
       return;
     }
 
-    // if (!thumbnailUrl) {
-    //   alert("Please select a thumbnail for your post...");
-    //   return;
-    // }
+    if (!thumbnailUrl) {
+      alert("Please select a thumbnail for your post...");
+      return;
+    }
 
     if (!tags.length) {
       alert("Please enter some tags for your post...");
@@ -403,7 +406,6 @@ const NewUpload: React.FC = () => {
     // set video info on 3Speak if video is uploaded
     if (isVideoUploaded) {
       const videoInstance = await setVideoInfoOn3Speak(videoInfo);
-      console.log("Video instance:", videoInstance);
 
       // at this point the video is uploaded on 3Speak
       // get the hive post permlink from the video instance and use it to create the hive post
@@ -431,7 +433,6 @@ const NewUpload: React.FC = () => {
       };
 
       const updatedVideoInstance = await setVideoInfoOn3Speak(updateObject, true); // true means update
-      console.log("Updated video instance:", updatedVideoInstance);
 
       // update the markdown text with the video URL and thumbnail URL
       const videoMarkdown = `<center>\n\n[![](${newThumbnailURL})](${videoURL})\n\n</center>\n`;
@@ -503,7 +504,7 @@ const NewUpload: React.FC = () => {
           'comment',
           {
             parent_author: '',
-            // parent_permlink: 'testing70',
+            // parent_permlink: 'testing798',
             parent_permlink: process.env.COMMUNITY || 'hive-173115',
             author: username,
             permlink: videoPermlink ? videoPermlink : permlink, // Use the video permlink if video is uploaded on 3Speak
@@ -534,11 +535,11 @@ const NewUpload: React.FC = () => {
 
             // trigger react confetti 
             setConfetti(true);
-
+            setIsSocialModalOpen(true);
             // wait 5 seconds and send the user home
-            setTimeout(() => {
-              window.location.href = '/';
-            }, 5000);
+            // setTimeout(() => {
+            //   window.location.href = '/';
+            // }, 5000);
             if (isVideoUploaded) {
               window.alert('Video successfully published on 3Speak! It will be available soon!');
             }
@@ -659,7 +660,6 @@ const NewUpload: React.FC = () => {
       alert(`Beneficiary ${searchUsername} already exists or percentage is zero.`);
     }
 
-    console.log("Search username:", searchUsername);
   };
   const handleBeneficiaryPercentageChange = (index: number, newPercentage: number) => {
     const updatedBeneficiaries = [...beneficiaries];
@@ -689,6 +689,9 @@ const NewUpload: React.FC = () => {
   const toggleAdvancedOptions = () => {
     setShowAdvancedOptions((prevShow) => !prevShow);
   };
+  const handleCloseSocialModal = () => {
+    setIsSocialModalOpen(false);
+  };
 
   return (
     <Box>
@@ -717,6 +720,9 @@ const NewUpload: React.FC = () => {
         </VStack>
       </Box> */}
       {confetti && <Confetti />}
+      {isSocialModalOpen && (
+        <SocialModal isOpen={isSocialModalOpen} onClose={handleCloseSocialModal} postUrl={postLink} content={markdownText} />
+      )}
 
       <Flex minWidth={"100%"}
         flexDirection={isMobile ? "column" : "row"}
